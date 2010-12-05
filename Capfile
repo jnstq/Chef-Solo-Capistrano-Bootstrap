@@ -160,7 +160,7 @@ Defaults  env_reset
     sudo "chown `whoami` #{dna_dir}"
     put %Q(file_cache_path "#{cookbook_dir}"
 cookbook_path ["#{cookbook_dir}/cookbooks", "#{cookbook_dir}/site-cookbooks"]
-role_path "#{cookbook_dir}/roles"), "#{dna_dir}/solo.rb", via => :scp, :mode => "0644"
+role_path "#{cookbook_dir}/roles"), "#{dna_dir}/solo.rb", :via => :scp, :mode => "0644"
     reinstall_dna
   end
 
