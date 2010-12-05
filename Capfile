@@ -42,7 +42,7 @@ node = ARGV[-2]
 
 namespace :chef do
   desc "Initialize a fresh Ubuntu install; create users, groups, upload pubkey, etc."
-  task :init_server, roles: :target do
+  task :init_server, :roles => :target do
     run %q(echo '
 # /etc/sudoers
 #
@@ -70,13 +70,13 @@ Defaults  env_reset
 # Members of the admin group may gain root privileges
 #%admin ALL=(ALL) ALL' > /etc/sudoers)
     run 'groupadd developers; exit 0'
-    create_user `whoami`, 'l0WlW3pH6hxj.', 'developers', 'sudo', `cat ~/.ssh/id_rsa.pub`
+    create_user `whoami`, 'l0WlW3pH6hxj.', 'developers', 'sudo', `cat ~/.ssh/id_dsa.pub`
     run 'rm /etc/motd; exit 0'
     abort 'Prep successful!'
   end
 
   desc "Bootstrap an Ubuntu 10.04 server and kick-start Chef-Solo"
-  task :bootstrap, roles: :target do
+  task :bootstrap, :roles => :target do
     install_rvm_ruby
     #install_ree
     install_chef
@@ -87,7 +87,7 @@ Defaults  env_reset
 
   desc "Install Ruby Enterprise Edition"
   # see also: http://www.rubyenterpriseedition.com/download.html
-  task :install_ree, roles: :target do
+  task :install_ree, :roles => :target do
     ree_version = 'ruby-enterprise-1.8.7-2010.02'
     ree_prefix = '/usr/local'
     sudo 'aptitude install -y zlib1g-dev libssl-dev libreadline5-dev' # REE dependencies
@@ -99,7 +99,7 @@ Defaults  env_reset
 
   desc "install Ruby (using RVM)"
   # see also: http://rohitarondekar.com/articles/installing-rails3-beta3-on-ubuntu-using-rvm
-  task :install_rvm_ruby, roles: :target do
+  task :install_rvm_ruby, :roles => :target do
     rvm_ruby_version = '1.9.2-p0'
     set :default_environment, {
       'PATH'         => "/usr/local/rvm/gems/ruby-#{rvm_ruby_version}/bin:/usr/local/rvm/gems/ruby-#{rvm_ruby_version}@global/bin:/usr/local/rvm/rubies/ruby-#{rvm_ruby_version}/bin:$PATH",
@@ -135,13 +135,13 @@ Defaults  env_reset
   end
 
   desc "Install Chef and Ohai gems as root"
-  task :install_chef, roles: :target do
+  task :install_chef, :roles => :target do
     sudo_env 'gem source -a http://gems.opscode.com/'
     sudo_env 'gem install ohai chef'
   end
 
   desc "Install Cookbook Repository from cwd"
-  task :install_cookbook_repo, roles: :target do
+  task :install_cookbook_repo, :roles => :target do
     sudo 'aptitude install -y rsync'
     sudo "mkdir -m 0775 -p #{cookbook_dir}"
     sudo "chown `whoami` #{cookbook_dir}"
@@ -149,42 +149,42 @@ Defaults  env_reset
   end
 
   desc "Re-install Cookbook Repository from cwd"
-  task :reinstall_cookbook_repo, roles: :target do
+  task :reinstall_cookbook_repo, :roles => :target do
     rsync cwd + '/', cookbook_dir
   end
 
   desc "Install ./dna/*.json for specified node"
-  task :install_dna, roles: :target do
+  task :install_dna, :roles => :target do
     sudo 'aptitude install -y rsync'
     sudo "mkdir -m 0775 -p #{dna_dir}"
     sudo "chown `whoami` #{dna_dir}"
     put %Q(file_cache_path "#{cookbook_dir}"
 cookbook_path ["#{cookbook_dir}/cookbooks", "#{cookbook_dir}/site-cookbooks"]
-role_path "#{cookbook_dir}/roles"), "#{dna_dir}/solo.rb", via: :scp, mode: "0644"
+role_path "#{cookbook_dir}/roles"), "#{dna_dir}/solo.rb", via => :scp, :mode => "0644"
     reinstall_dna
   end
 
   desc "Re-install ./dna/*.json for specified node"
-  task :reinstall_dna, roles: :target do
+  task :reinstall_dna, :roles => :target do
     rsync "#{cwd}/dna/#{node}.json", "#{dna_dir}/dna.json"
   end
 
   desc "Execute Chef-Solo"
-  task :solo, roles: :target do
+  task :solo, :roles => :target do
     sudo_env "chef-solo -c #{dna_dir}/solo.rb -j #{dna_dir}/dna.json -l debug"
 
     exit # subsequent args are not tasks to be run
   end
 
   desc "Reinstall and Execute Chef-Solo"
-  task :resolo, roles: :target do
+  task :resolo, :roles => :target do
     reinstall_cookbook_repo
     reinstall_dna
     solo
   end
 
   desc "Cleanup, Reinstall, and Execute Chef-Solo"
-  task :clean_solo, roles: :target do
+  task :clean_solo, :roles => :target do
     cleanup
     install_chef
     install_cookbook_repo
@@ -193,7 +193,7 @@ role_path "#{cookbook_dir}/roles"), "#{dna_dir}/solo.rb", via: :scp, mode: "0644
   end
 
   desc "Remove all traces of Chef"
-  task :cleanup, roles: :target do
+  task :cleanup, :roles => :target do
     sudo "rm -rf #{dna_dir} #{cookbook_dir}"
     sudo_env 'gem uninstall -ax chef ohai'
   end
